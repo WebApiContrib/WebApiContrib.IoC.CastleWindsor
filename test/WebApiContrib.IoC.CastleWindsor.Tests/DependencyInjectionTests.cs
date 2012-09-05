@@ -1,14 +1,9 @@
-﻿using System.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Controllers;
-using System.Web.Http.Dispatcher;
 using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using NUnit.Framework;
-using Rhino.Mocks;
-using Should;
-using WebApiContrib.IoC.CastleWindsor;
 using WebApiContrib.IoC.CastleWindsor.Tests.Helpers;
 
 namespace WebApiContrib.IoC.CastleWindsor.Tests.IoC
