@@ -33,3 +33,5 @@ docs/
 nuget/
 packages/
 *.nupkg
+*.ncrunch*
+
