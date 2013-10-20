@@ -58,11 +58,11 @@ namespace WebApiContrib.IoC.CastleWindsor
 
         }
     }
-    public class WindsorDependencyResolver : IDependencyResolver
+    public class WindsorResolver : IDependencyResolver
     {
         private readonly IWindsorContainer _container;
 
-        public WindsorDependencyResolver(IWindsorContainer container)
+        public WindsorResolver(IWindsorContainer container)
         {
             _container = container;
         }
