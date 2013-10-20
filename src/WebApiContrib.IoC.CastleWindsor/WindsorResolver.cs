@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http.Dependencies;
@@ -8,61 +9,89 @@ namespace WebApiContrib.IoC.CastleWindsor
 {
     public class WindsorDependencyScope : IDependencyScope
     {
-        private IWindsorContainer container;
+
+        protected readonly IWindsorContainer _container;
+        private ConcurrentBag<object> _toBeReleased = new ConcurrentBag<object>();
 
         public WindsorDependencyScope(IWindsorContainer container)
         {
-            if (container == null) throw new ArgumentNullException("container");
-            this.container = container;
-        }
-
-        public object GetService(Type serviceType)
-        {
-            if (container == null)
-                throw new ObjectDisposedException("this", "This scope has already been disposed.");
-
-            if (!container.Kernel.HasComponent(serviceType))
-                return null;
-
-            return container.Resolve(serviceType);
-        }
-
-        public IEnumerable<object> GetServices(Type serviceType)
-        {
-            if (container == null)
-                throw new ObjectDisposedException("this", "This scope has already been disposed.");
-
-            if (!container.Kernel.HasComponent(serviceType))
-                return Enumerable.Empty<object>();
-
-            return container.ResolveAll(serviceType).Cast<object>();
+            _container = container;
         }
 
         public void Dispose()
         {
-            container.Dispose();
-            container = null;
+            if (_toBeReleased != null)
+            {
+                foreach (var o in _toBeReleased)
+                {
+                    _container.Release(o);
+                }
+            }
+            _toBeReleased = null;
+        }
+
+        public object GetService(Type serviceType)
+        {
+            if (!_container.Kernel.HasComponent(serviceType))
+                return null;
+
+            var resolved = _container.Resolve(serviceType);
+            if (resolved != null)
+                _toBeReleased.Add(resolved);
+            return resolved;
+
+        }
+
+        public IEnumerable<object> GetServices(Type serviceType)
+        {
+            if (!_container.Kernel.HasComponent(serviceType))
+                return new object[0];
+
+
+            var allResolved = _container.ResolveAll(serviceType).Cast<object>();
+            if (allResolved != null)
+            {
+                allResolved.ToList()
+                    .ForEach(x => _toBeReleased.Add(x));
+            }
+            return allResolved;
+
         }
     }
-
-    public class WindsorResolver : WindsorDependencyScope, IDependencyResolver
+    public class WindsorDependencyResolver : IDependencyResolver
     {
-        private readonly IWindsorContainer container;
+        private readonly IWindsorContainer _container;
 
-        public WindsorResolver(IWindsorContainer container)
-            : base(container)
+        public WindsorDependencyResolver(IWindsorContainer container)
         {
-            if (container == null)
-                throw new ArgumentNullException("container");
-
-            this.container = container;
+            _container = container;
         }
 
         public IDependencyScope BeginScope()
         {
-            var scope = new WindsorContainer();
-            container.AddChildContainer(scope);
-            return new WindsorDependencyScope(scope);
+            return new WindsorDependencyScope(_container);
+        }
+
+        public void Dispose()
+        {
+            _container.Dispose();
+        }
+
+        public object GetService(Type serviceType)
+        {
+            if (!_container.Kernel.HasComponent(serviceType))
+                return null;
+
+            return _container.Resolve(serviceType);
+        }
+
+        public IEnumerable<object> GetServices(Type serviceType)
+        {
+            if (!_container.Kernel.HasComponent(serviceType))
+                return new object[0];
+
+            return _container.ResolveAll(serviceType).Cast<object>();
         }
     }
+
 }
