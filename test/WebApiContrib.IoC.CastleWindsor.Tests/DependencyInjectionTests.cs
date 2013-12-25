@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using Castle.MicroKernel.Registration;
@@ -48,7 +49,8 @@ namespace WebApiContrib.IoC.CastleWindsor.Tests.IoC
             using (var container = new WindsorContainer())
             {
                 container.Register(
-                    Component.For<IContactRepository>().Instance(new InMemoryContactRepository()));
+                    Component.For<IContactRepository>().Instance(new InMemoryContactRepository()),
+                    Component.For<ContactsController>().ImplementedBy<ContactsController>());
 
                 config.DependencyResolver = new WindsorResolver(container);
 
@@ -57,8 +59,10 @@ namespace WebApiContrib.IoC.CastleWindsor.Tests.IoC
 
 				client.GetAsync("http://anything/api/contacts").ContinueWith(task =>
 				{
-					var response = task.Result;
-					Assert.IsNotNull(response.Content);
+					var response = task.Result.Content.ReadAsAsync<List<Contact>>().Result;
+					Assert.IsNotNull(response[1]);
+
+
 				});
             }
         }
