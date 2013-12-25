@@ -9,6 +9,16 @@ namespace WebApiContrib.IoC.CastleWindsor.Tests.Helpers
 {
     public class ContactsController : ApiController
     {
+        readonly IContactRepository _repository;
+
+        public ContactsController(IContactRepository repository) {
+            _repository = repository;
+        }
+
+        public HttpResponseMessage Get() {
+            return Request.CreateResponse(HttpStatusCode.OK, _repository.GetAll());
+        }
+
         public HttpResponseMessage Post(List<Contact> contacts)
         {
             Debug.WriteLine(String.Format("POSTed Contacts: {0}", contacts.Count));
